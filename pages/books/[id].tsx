@@ -8,7 +8,6 @@ type BookDetailsProps = {
   book: IBook
 }
 
-// test
 const BookDetails = ({ book }: BookDetailsProps) => {
   const [editMode, setEditMode] = React.useState(false)
   const [comments, setComments] = React.useState(book.comments)
