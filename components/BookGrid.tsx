@@ -23,7 +23,6 @@ function BookGrid() {
     const { data, error } = useQuery(['books'], () =>
       supabase.from('books').insert(book)
     )
-    console.log('NEW BOOK:', data)
   }
 
   return (

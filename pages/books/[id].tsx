@@ -1,19 +1,21 @@
 import React from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { GetServerSideProps } from 'next'
 import { IBook } from '../../types'
 import { supabase } from '../../utils/supabase'
+import { serialize } from 'next-mdx-remote/serialize'
+import { MDXRemote, MDXRemoteSerializeResult } from 'next-mdx-remote'
 
 type BookDetailsProps = {
-  book: IBook
+  book: IBook & {
+    mdxComments: MDXRemoteSerializeResult
+  }
 }
 
 const BookDetails = ({ book }: BookDetailsProps) => {
   const [editMode, setEditMode] = React.useState(false)
-  const [comments, setComments] = React.useState(book.comments)
+  const [comments, setComments] = React.useState<string>(book.comments)
 
   const saveChanges = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    // e.preventDefault()
     const { data, error } = await supabase
       .from('books')
       .update({
@@ -24,7 +26,7 @@ const BookDetails = ({ book }: BookDetailsProps) => {
       })
     setEditMode(false)
   }
-
+  
   return (
     <div className="p-8">
       <a href="/" className="text-xl ml-16">
@@ -62,6 +64,7 @@ const BookDetails = ({ book }: BookDetailsProps) => {
                     m-0
                     focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none
                 "
+                rows={14}
                 value={comments ?? ''}
                 onChange={e => setComments(e.target.value)}
                 placeholder="Your comments about the book"
@@ -82,16 +85,16 @@ const BookDetails = ({ book }: BookDetailsProps) => {
             </div>
           ) : (
             <div>
-              {book.comments?.length ? (
-                <>
+              {book.comments ? (
+                <div className='prose'>
                   <button
                     className="bg-black text-white rounded-md px-2 py-1"
                     onClick={() => setEditMode(!editMode)}
                   >
                     ✏️ Edit comments
                   </button>
-                  <p className="mt-4">{book.comments}</p>
-                </>
+                  <MDXRemote {...book.mdxComments} />
+                </div>
               ) : (
                 <button
                   className="bg-black text-white rounded-md px-2 py-1"
@@ -113,9 +116,13 @@ export default BookDetails
 export const getServerSideProps: GetServerSideProps = async ctx => {
   const { id } = ctx.query
   const { data } = await supabase.from<IBook>('books').select('*').match({ id })
+  const mdxComments = await serialize(data?.[0]?.comments || '')
   return {
     props: {
-      book: data?.[0],
+      book: {
+        ...data?.[0],
+        mdxComments: mdxComments
+      }
     },
   }
 }
